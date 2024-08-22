@@ -1,0 +1,216 @@
+---
+title: "Final exam- MD  Myneni Dhanush"
+author: "Dhanush Myneni"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+***
+
+**CODE FOR FINAL EXAMINATION**
+
+***
+
+**Problem statement**
+
+Use hierarchical clustering to perform cluster analysis using the following variables:
+Sulfur content, ash content and fuel cost.
+
+1. Justify your choice of linkage method.
+2. How many clusters did you decide? Use a cut tree to cut a tree into grups
+3. Describe your clusters. Provide relevant tables and graphs to support the conclusion.
+4. What can you say about the relative  composiiton of different fuel types in relation to your clusters?
+
+***
+
+**Summary:**
+
+This code is for the final examination of the the fundamentals of machine learning course. In this, we are performing a hierarchical clustering to perform cluster analysis on the three variables, sulfur content, ash content and fuel cost.
+
+Hierarchical clustering is a widely used clustering method due to several reasons which include, presentation in the form of a dendogram (used in the code below) which is easy to interpret. Also, unlike the k means clustering method in which one is required to specify the number of k beforehand, we do not have the need to specify k value in hierarchical clustering technique. We also have the flexibility to choose between the kind of linkage method used which allows us to specify the similarity between groups.
+
+#Interpreting the results from the code below.
+
+The dataset given contains a total of 12 variables. However, for our study we have considered only three variables namely sulfur content, ash content and fuel cost. 
+
+1. We have implemented both kinds of linkages ward and the complete linkage.However, we have chosen the ward linkage to do the clustering analysis. In order to decide upon the kind of linkage to be used, we have evaluated the silhouette scores and upon calculation of these scores we found out that the ward linkage has an higher evaluation score (.58) when compared to the complete linkage method which returned a lesser evaluation score (.41). Also, ward linkage minimizes the total within cluster variance which helped us produce more homogenous within and hetergenous between clusters which is how an ideal cluster should be.The resulting dendrograms shows more distinct separation between clusters with Ward linkage versus complete linkage. Also, after carefully examining the dendograms, ward linkage produced even sizes of clusters whereas complete linkage produced few huge clusters and many many tiny clusters. Therefore, we can conclude that ward linkage is used because of it producing even sized clusters indicating homogenous groups and it is also strengthened by an higher silhouette score making it a better choice.
+
+2. We have used the elbow plot to decide on the optimal no of clusters to be formed. Upon creating an elbow plot, we have decided on the no. of clusters to be as 3. The elbow plot of within groups sum of squares vs number of clusters showed an elbow at 3 clusters (indicated by a red dotted line at 3), indicating that additional clusters beyond 3 would not significantly reduce within-cluster variation.We also ran the k means clustering for values ranging from 1 to 15 and we plotted the within sum of squares.No of clusters 3 is re- affirmed by the line at K=3 even in this. We calculated the silhoette scores when K=3 for both ward and complete linkages and the results returned were .58 and .41 respectively indicating a good cluster cohesion and separation. Even the dendograms visually plotted the clusters to be 3 distinguishing different groups while avoiding too many low-value clusters. 
+
+3.
+Cluster 1 (n=34): Low sulfur and ash content, mid-range fuel cost. Low sulfur content is due to tight distribution as values are centered around -.3. Ash also indicates a low tight distribution as their values range from 0 to 0.5.
+Cluster 2 (n=8): Very high fuel cost, mid-range sulfur content, low ash content. The boxplot showed a mid-range sulphur but a very high fuel cost and low ash content.
+Cluster 3 (n=16): High sulfur content, very high ash content, low fuel cost. The ash content distribution is very high alongside the sulfur content and a low tight distribution of fuel cost.
+ 
+4.Cluster 1 contains  only fuel type 1 data and it is a single homogenous type cluster. Cluster 2 has a mix of fuel type 2 and type 3 data and cluster 3 again has a fuel type 1 data which is again a homogenous cluster. We can say that, fuel types1 and 2 are distinct as they cluster the data into separate groups and fuel type 3 has intermediate properties. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("C:/Users/dhanu/OneDrive/Desktop/FML/Final") #Setting the path 
+```
+
+```{r}
+Final_Data <- read.csv("C:/Users/dhanu/OneDrive/Desktop/FML/Final/Final exam data.csv") # reading the CSV file
+```
+
+```{r}
+head(Final_Data) # looking at the first few rows of the data to gain insights on the data.
+```
+
+```{r}
+Final_Data_1 <- Final_Data[,c(10:12)] #selecting only the variables needed i.e sulfur content, ash content and fuel cost
+```
+
+```{r}
+Final_data_2 <- scale(Final_Data_1) # we scale the data to normalize it and it is highly recommended for hierarchical clustering. 
+```
+
+```{r}
+library(hclust1d)
+```
+
+```{r}
+Hclustering <- hclust(dist(Final_data_2), method = "complete") #using the complete linkage method.
+```
+
+```{r}
+Hclustering_1 <- hclust(dist(Final_data_2), method = "ward.D") # using an other linkage method- Ward linkage
+```
+
+```{r}
+dendrogram <- as.dendrogram(Hclustering)
+plot(dendrogram) #We do the dendogram to find the vertical lines that are longer than the previous merges, plotting for complete linkage method.
+```
+
+```{r}
+dendrogram <- as.dendrogram(Hclustering_1) #PLOTTING THE dendogram for ward linkage method
+plot(dendrogram)
+```
+
+```{r}
+clusters <- cutree(Hclustering, h=5) #cutting the tree at the height of 5. Complete linkage
+clusters <- cutree(Hclustering, h=3) #cutting the tree at the height of 3. Complete linkage
+
+clusters <- cutree(Hclustering_1, h=5) #cutting the tree at the height of 5. Ward Linkage 
+clusters <- cutree(Hclustering_1, h=3) #cutting the tree at the height of 3. Ward linkage
+```
+
+```{r}
+# Calculate total within sum of squares for different number of clusters
+wss <- vector() 
+for (i in 1:15) wss[i] <- sum(kmeans(Final_data_2, centers=i)$withinss)
+
+# Plot elbow curve  
+plot(1:15, wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
+
+# Add red dotted line at optimal k
+abline(v=3, lty=2, col="red")
+
+#from the elbow plot above we can conclude that the optimal k value is 3.
+```
+
+
+```{r}
+set.seed(123)
+index <- sample(1:nrow(Final_data_2), size = 0.7*nrow(Final_data_2))
+
+train <- Final_data_2[index,]
+valid <- Final_data_2[-index,]
+```
+
+```{r}
+hc_complete <- hclust(dist(train), method="complete")
+hc_ward <- hclust(dist(train), method="ward.D")
+```
+
+```{r}
+library(cluster)
+```
+
+```{r}
+evaluate_clusters <- function(clusters, data){
+
+  # Calculate silhouette information 
+  silhouette_info <- silhouette(clusters, dist(data))
+  
+  # Extract average silhouette width
+  silhouette_score <- mean(silhouette_info[,3])
+
+  return(silhouette_score)
+}
+
+evaluate_clusters(cutree(hc_ward, 3), train) #Scores for ward linkage
+evaluate_clusters(cutree(hc_complete, 3), train) #scores for complete linkage
+```
+
+```{r}
+clusters <- cutree(Hclustering_1, h=3) 
+table(clusters)
+
+# Cluster sizes
+cluster1 <- 34 
+cluster2 <- 8
+cluster3 <- 16
+
+# Create table with mean values per cluster
+cluster_means <- aggregate(Final_data_2, by=list(clusters), FUN=mean)
+
+# View table
+print(cluster_means)
+```
+
+```{r}
+# Subset final data matrix by cluster
+cluster1_data <- Final_data_2[clusters==1,]
+cluster2_data <- Final_data_2[clusters==2,] 
+cluster3_data <- Final_data_2[clusters==3,]
+
+# Boxplots to visualize clusters  
+par(mfrow=c(1,3))
+boxplot(cluster1_data[,1], main="Sulfur Content") 
+boxplot(cluster1_data[,2], main="Ash Content")
+boxplot(cluster1_data[,3], main="Fuel Cost")
+```
+
+```{r}
+# Extract the fuel type codes
+fuel_types <- Final_Data$fuel_type_code_pudl
+
+# Create fuel type factor variable  
+fuel_types <- as.factor(fuel_types) 
+
+# Bind to existing data as new column 
+Final_data_3 <- cbind(Final_Data[,c(10:12)], fuel_types)
+
+# Give column name
+colnames(Final_data_3)[4] <- "fuel_type"
+
+# Now cluster on dataset with fuel type included
+Final_data_scaled <- scale(Final_data_3[,1:3]) 
+Final_data_scaled$fuel_type <- Final_data_3$fuel_type
+
+# Scale continuous variables
+cont_scaled <- scale(Final_data_3[,1:3])
+
+# Create matrix from scaled variables 
+Final_data_mat <- data.matrix(cont_scaled) 
+
+# Bind fuel type vector 
+Final_data_mat <- cbind(Final_data_mat, Final_data_3$fuel_type)
+
+# Cluster
+clusters <- hclust(dist(Final_data_mat[,1:3]), method="ward.D")
+
+# Cut tree and extract clusters
+final_clusters <- cutree(clusters, 3)
+
+# Compare fuel types by cluster
+table(final_clusters, Final_data_mat[,4])
+```
+
